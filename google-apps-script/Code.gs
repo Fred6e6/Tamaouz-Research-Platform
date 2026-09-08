@@ -15,16 +15,20 @@ function setupTamaouz() {
     const folder = DriveApp.createFolder(CONFIG.DRIVE_FOLDER_NAME);
     props.setProperty('DRIVE_FOLDER_ID', folder.getId());
   }
+  if (!props.getProperty('REQUEST_COUNTER')) {
+    props.setProperty('REQUEST_COUNTER', String(Math.max(0, sheet.getLastRow() - 1)));
+  }
   return 'Tamaouz backend is ready';
 }
 
 function doGet() {
-  return ContentService.createTextOutput(JSON.stringify({ok:true,service:'Tamaouz API'})).setMimeType(ContentService.MimeType.JSON);
+  return json_({ok:true,service:'Tamaouz API'});
 }
 
 function doPost(e) {
   try {
-    const data = JSON.parse(e.postData.contents || '{}');
+    const raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}';
+    const data = JSON.parse(raw);
     if (data.action !== 'submitRequest') throw new Error('Unsupported action');
     setupTamaouz();
     const id = createRequestId_();
@@ -51,9 +55,10 @@ function createRequestId_() {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_NAME);
+    const props = PropertiesService.getScriptProperties();
     const year = new Date().getFullYear();
-    const count = Math.max(0, sheet.getLastRow() - 1) + 1;
+    const count = Number(props.getProperty('REQUEST_COUNTER') || 0) + 1;
+    props.setProperty('REQUEST_COUNTER', String(count));
     return 'TM-' + year + '-' + String(count).padStart(5,'0');
   } finally { lock.releaseLock(); }
 }
