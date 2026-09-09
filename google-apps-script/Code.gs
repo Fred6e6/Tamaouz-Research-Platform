@@ -6,6 +6,8 @@ const CONFIG = {
 
 function setupTamaouz() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) throw new Error('No active spreadsheet found. Open Apps Script from the target Google Sheet and run setupTamaouz.');
+  PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', ss.getId());
   let sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
   if (!sheet) sheet = ss.insertSheet(CONFIG.SHEET_NAME);
   const headers = ['Request ID','Created At','Request Type','Full Name','Academic / Job Title','University / Workplace','College / Department','Academic Level','City','Country','Email','Mobile','Project Title','Pages','References','Citation Style','Deadline','Topic','Instructions','Dynamic Requirements','Files','Status'];
@@ -18,11 +20,26 @@ function setupTamaouz() {
   if (!props.getProperty('REQUEST_COUNTER')) {
     props.setProperty('REQUEST_COUNTER', String(Math.max(0, sheet.getLastRow() - 1)));
   }
+  SpreadsheetApp.flush();
   return 'Tamaouz backend is ready';
 }
 
+function getSpreadsheet_() {
+  const id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+  if (id) return SpreadsheetApp.openById(id);
+  const active = SpreadsheetApp.getActiveSpreadsheet();
+  if (active) return active;
+  throw new Error('Spreadsheet is not configured. Run setupTamaouz once from the Google Sheet Apps Script editor.');
+}
+
 function doGet() {
-  return json_({ok:true,service:'Tamaouz API'});
+  try {
+    const ss = getSpreadsheet_();
+    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+    return json_({ok:true,service:'Tamaouz API',spreadsheet:ss.getName(),sheet:sheet ? sheet.getName() : null,rows:sheet ? sheet.getLastRow() : 0});
+  } catch(err) {
+    return json_({ok:false,error:String(err.message || err)});
+  }
 }
 
 function doPost(e) {
@@ -30,10 +47,10 @@ function doPost(e) {
     const raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}';
     const data = JSON.parse(raw);
     if (data.action !== 'submitRequest') throw new Error('Unsupported action');
+    const ss = getSpreadsheet_();
+    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME) || ss.insertSheet(CONFIG.SHEET_NAME);
     setupTamaouz();
     const id = data.requestId || createRequestId_();
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
     const folder = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('DRIVE_FOLDER_ID'));
     const requestFolder = folder.createFolder(id + ' - ' + safe_(data.fullName || 'Student'));
     const fileLinks = [];
@@ -45,8 +62,10 @@ function doPost(e) {
       fileLinks.push(created.getUrl());
     });
     sheet.appendRow([id,new Date(),data.requestType||'',data.fullName||'',data.title||'',data.workplace||'',data.department||'',data.level||'',data.city||'',data.country||'',data.email||'',data.mobile||'',data.projectTitle||'',data.pages||'',data.references||'',data.citation||'',data.deadline||'',data.topic||'',data.instructions||'',JSON.stringify(data.dynamicRequirements||{}),fileLinks.join('\n'),CONFIG.STATUS]);
+    SpreadsheetApp.flush();
     return json_({ok:true,requestId:id,status:CONFIG.STATUS,folderUrl:requestFolder.getUrl()});
   } catch(err) {
+    console.error(err);
     return json_({ok:false,error:String(err.message || err)});
   }
 }
