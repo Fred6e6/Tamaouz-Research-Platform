@@ -1,16 +1,18 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Tamaouz | Admin Dashboard</title><link rel="stylesheet" href="dashboard.css">
-</head>
+<html lang="en" dir="ltr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Tamaouz | Admin Dashboard</title><link rel="stylesheet" href="dashboard.css"></head>
 <body>
-<header class="topbar"><a class="brand" href="index.html"><span>T</span><strong>TAMAOUZ</strong></a><a href="dashboard.html">Student Dashboard</a></header>
+<header class="topbar"><a class="brand" href="index.html"><span>T</span><strong>TAMAOUZ</strong></a><div class="top-actions"><a href="dashboard.html" data-i18n="studentDashboard">Student Dashboard</a><button id="languageToggle" class="language-toggle" type="button">العربية</button></div></header>
 <main class="wrap">
-  <div class="page-head"><div><p class="eyebrow">ADMINISTRATION</p><h1>Request Management</h1><p>Review submitted requests and update their workflow status.</p></div></div>
-  <div class="admin-tools"><input id="search" placeholder="Search by ID, name or request type"><select id="statusFilter"><option value="">All statuses</option><option>Submitted</option><option>Under Review</option><option>In Progress</option><option>Ready for Review</option><option>Completed</option></select></div>
+  <div class="page-head"><div><p class="eyebrow" data-i18n="eyebrow">ADMINISTRATION</p><h1 data-i18n="title">Request Management</h1><p data-i18n="subtitle">Review submitted requests and update their workflow status.</p></div></div>
+  <div class="admin-tools"><input id="search" placeholder="Search by ID, name or request type"><select id="statusFilter"><option value="">All statuses</option><option value="Submitted">Submitted</option><option value="Under Review">Under Review</option><option value="In Progress">In Progress</option><option value="Ready for Review">Ready for Review</option><option value="Completed">Completed</option></select></div>
   <section id="adminList" class="request-list"></section>
 </main>
 <script src="dashboard.js"></script>
-</body>
-</html>
+<script>
+const adminTranslations={en:{studentDashboard:'Student Dashboard',eyebrow:'ADMINISTRATION',title:'Request Management',subtitle:'Review submitted requests and update their workflow status.',search:'Search by ID, name or request type',all:'All statuses'},ar:{studentDashboard:'لوحة الطالب',eyebrow:'الإدارة',title:'إدارة الطلبات',subtitle:'راجع الطلبات المرسلة وحدّث حالة سير العمل.',search:'البحث برقم الطلب أو الاسم أو نوع الطلب',all:'جميع الحالات'}};
+function applyAdminText(){const l=localStorage.getItem('tamaouz_language')||'en';const x=adminTranslations[l];document.getElementById('search').placeholder=x.search;document.getElementById('statusFilter').options[0].text=x.all;document.querySelectorAll('[data-i18n]').forEach(e=>e.textContent=x[e.dataset.i18n]||e.textContent);}
+applyAdminText();
+document.getElementById('languageToggle').addEventListener('click',()=>{const l=localStorage.getItem('tamaouz_language')||'en';localStorage.setItem('tamaouz_language',l==='en'?'ar':'en');location.reload();});
+</script>
+</body></html>
