@@ -31,7 +31,7 @@ function doPost(e) {
     const data = JSON.parse(raw);
     if (data.action !== 'submitRequest') throw new Error('Unsupported action');
     setupTamaouz();
-    const id = createRequestId_();
+    const id = data.requestId || createRequestId_();
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
     const folder = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('DRIVE_FOLDER_ID'));
