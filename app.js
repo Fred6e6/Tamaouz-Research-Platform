@@ -109,15 +109,48 @@ async function collectFiles(){
   return result;
 }
 
-async function submitToBackend(payload){
-  const body=new URLSearchParams({payload:JSON.stringify(payload)});
-  const response=await fetch(API_URL,{method:'POST',body});
-  if(!response.ok) throw new Error(`Server error (${response.status}).`);
-  const text=await response.text();
-  let result;
-  try{result=JSON.parse(text)}catch{throw new Error('The server returned an invalid response. Please try again.');}
-  if(!result.ok) throw new Error(result.error||'The request could not be submitted.');
-  return result;
+function generateRequestId(){
+  return 'TM-'+new Date().getFullYear()+'-'+String(Math.floor(10000+Math.random()*90000));
+}
+
+function submitThroughForm(payload){
+  return new Promise((resolve,reject)=>{
+    const iframe=document.createElement('iframe');
+    iframe.name='tamaouz-submit-frame-'+Date.now();
+    iframe.style.display='none';
+    document.body.appendChild(iframe);
+    const postForm=document.createElement('form');
+    postForm.method='POST';
+    postForm.action=API_URL;
+    postForm.target=iframe.name;
+    postForm.style.display='none';
+    const field=document.createElement('textarea');
+    field.name='payload';
+    field.value=JSON.stringify(payload);
+    postForm.appendChild(field);
+    document.body.appendChild(postForm);
+    let finished=false;
+    const cleanup=()=>{setTimeout(()=>{postForm.remove();iframe.remove();},1500);};
+    iframe.onload=()=>{
+      if(finished)return;
+      finished=true;
+      cleanup();
+      resolve(true);
+    };
+    iframe.onerror=()=>{
+      if(finished)return;
+      finished=true;
+      cleanup();
+      reject(new Error('The submission could not be sent. Please try again.'));
+    };
+    try{postForm.submit();}catch(err){finished=true;cleanup();reject(err);return;}
+    setTimeout(()=>{
+      if(finished)return;
+      finished=true;
+      cleanup();
+      resolve(true);
+    },10000);
+  });
 }
 
 form.addEventListener('submit',async e=>{
@@ -130,8 +163,10 @@ form.addEventListener('submit',async e=>{
     const data=new FormData(form);
     const dynamicRequirements={};
     [...form.querySelectorAll('.dynamic-input')].forEach(input=>{dynamicRequirements[input.name]=input.value||'';});
+    const id=generateRequestId();
     const payload={
       action:'submitRequest',
+      requestId:id,
       requestType:data.get('requestType')||'',
       fullName:data.get('fullName')||'',
       title:data.get('title')||'',
@@ -152,31 +187,11 @@ form.addEventListener('submit',async e=>{
       dynamicRequirements,
       files:await collectFiles()
     };
-    const result=await submitToBackend(payload);
-    const request={
-      id:result.requestId,
-      type:payload.requestType,
-      fullName:payload.fullName,
-      title:payload.title,
-      workplace:payload.workplace,
-      department:payload.department,
-      level:payload.level,
-      city:payload.city,
-      country:payload.country,
-      email:payload.email,
-      mobile:payload.mobile,
-      projectTitle:payload.projectTitle,
-      pages:payload.pages,
-      references:payload.references,
-      citation:payload.citation,
-      deadline:payload.deadline,
-      topic:payload.topic,
-      instructions:payload.instructions,
-      status:result.status||'Submitted',
-      createdAt:new Date().toLocaleString('en-GB')
-    };
+    await submitThroughForm(payload);
+    const request={...payload,status:'Submitted',createdAt:new Date().toLocaleString('en-GB')};
+    delete request.action;delete request.files;delete request.dynamicRequirements;
     saveRequest(request);
-    document.getElementById('requestId').textContent=result.requestId;
+    document.getElementById('requestId').textContent=id;
     form.hidden=true;
     document.querySelector('.request-intro').hidden=true;
     document.getElementById('success').hidden=false;
