@@ -54,11 +54,12 @@ function doGet(e) {
     const params = e && e.parameter ? e.parameter : {};
     const action = String(params.action || '');
     const callback = String(params.callback || '');
-
     let result;
 
     if (action === 'getRequest') {
       result = getRequestData_(params.requestId, params.email);
+    } else if (action === 'getRequests') {
+      result = getRequestsData_(params.email);
     } else {
       const ss = getSpreadsheet_();
       const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
@@ -73,7 +74,6 @@ function doGet(e) {
 
     if (callback) return jsonp_(result, callback);
     return json_(result);
-
   } catch (err) {
     const result = { ok: false, error: String(err.message || err) };
     const callback = e && e.parameter ? String(e.parameter.callback || '') : '';
@@ -89,12 +89,38 @@ function getRequestData_(requestId, email) {
     return { ok: false, error: 'Request ID and email are required.' };
   }
 
+  const requests = getAllRequestsForEmail_(mail);
+  const request = requests.find(r => String(r.requestId).trim().toUpperCase() === id);
+
+  if (!request) {
+    return { ok: false, error: 'Request not found or email does not match.' };
+  }
+
+  return { ok: true, request: request };
+}
+
+function getRequestsData_(email) {
+  const mail = String(email || '').trim().toLowerCase();
+
+  if (!mail) {
+    return { ok: false, error: 'Email is required.' };
+  }
+
+  const requests = getAllRequestsForEmail_(mail);
+
+  return {
+    ok: true,
+    email: mail,
+    count: requests.length,
+    requests: requests
+  };
+}
+
+function getAllRequestsForEmail_(mail) {
   const ss = getSpreadsheet_();
   const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
 
-  if (!sheet || sheet.getLastRow() < 2) {
-    return { ok: false, error: 'Request not found.' };
-  }
+  if (!sheet || sheet.getLastRow() < 2) return [];
 
   const values = sheet.getDataRange().getValues();
   const headers = values[0];
@@ -103,47 +129,45 @@ function getRequestData_(requestId, email) {
 
   headers.forEach((h, i) => { idx[String(h)] = i; });
 
-  const row = rows.find(r =>
-    String(r[idx['Request ID']] || '').trim().toUpperCase() === id &&
-    String(r[idx['Email']] || '').trim().toLowerCase() === mail
-  );
+  return rows
+    .filter(row => String(row[idx['Email']] || '').trim().toLowerCase() === mail)
+    .map(rowToRequest_)
+    .reverse();
+}
 
-  if (!row) {
-    return { ok: false, error: 'Request not found or email does not match.' };
+function rowToRequest_(row) {
+  const created = row[1];
+  let dynamic = {};
+
+  try {
+    dynamic = JSON.parse(String(row[19] || '{}'));
+  } catch (_) {
+    dynamic = {};
   }
 
-  const created = row[idx['Created At']];
-  let dynamic = {};
-  try {
-    dynamic = JSON.parse(String(row[idx['Dynamic Requirements']] || '{}'));
-  } catch (_) {}
-
   return {
-    ok: true,
-    request: {
-      requestId: String(row[idx['Request ID']] || ''),
-      createdAt: created instanceof Date ? created.toISOString() : String(created || ''),
-      requestType: String(row[idx['Request Type']] || ''),
-      fullName: String(row[idx['Full Name']] || ''),
-      title: String(row[idx['Academic / Job Title']] || ''),
-      workplace: String(row[idx['University / Workplace']] || ''),
-      department: String(row[idx['College / Department']] || ''),
-      level: String(row[idx['Academic Level']] || ''),
-      city: String(row[idx['City']] || ''),
-      country: String(row[idx['Country']] || ''),
-      email: String(row[idx['Email']] || ''),
-      mobile: String(row[idx['Mobile']] || ''),
-      projectTitle: String(row[idx['Project Title']] || ''),
-      pages: String(row[idx['Pages']] || ''),
-      references: String(row[idx['References']] || ''),
-      citation: String(row[idx['Citation Style']] || ''),
-      deadline: String(row[idx['Deadline']] || ''),
-      topic: String(row[idx['Topic']] || ''),
-      instructions: String(row[idx['Instructions']] || ''),
-      dynamicRequirements: dynamic,
-      files: String(row[idx['Files']] || ''),
-      status: String(row[idx['Status']] || CONFIG.STATUS)
-    }
+    requestId: String(row[0] || ''),
+    createdAt: created instanceof Date ? created.toISOString() : String(created || ''),
+    requestType: String(row[2] || ''),
+    fullName: String(row[3] || ''),
+    title: String(row[4] || ''),
+    workplace: String(row[5] || ''),
+    department: String(row[6] || ''),
+    level: String(row[7] || ''),
+    city: String(row[8] || ''),
+    country: String(row[9] || ''),
+    email: String(row[10] || ''),
+    mobile: String(row[11] || ''),
+    projectTitle: String(row[12] || ''),
+    pages: String(row[13] || ''),
+    references: String(row[14] || ''),
+    citation: String(row[15] || ''),
+    deadline: String(row[16] || ''),
+    topic: String(row[17] || ''),
+    instructions: String(row[18] || ''),
+    dynamicRequirements: dynamic,
+    files: String(row[20] || ''),
+    status: String(row[21] || CONFIG.STATUS)
   };
 }
 
@@ -215,7 +239,6 @@ function doPost(e) {
       status: CONFIG.STATUS,
       folderUrl: requestFolder.getUrl()
     });
-
   } catch (err) {
     console.error(err);
     return json_({ ok: false, error: String(err.message || err) });
@@ -233,7 +256,6 @@ function createRequestId_() {
 
     props.setProperty('REQUEST_COUNTER', String(count));
     return 'TM-' + year + '-' + String(count).padStart(5, '0');
-
   } finally {
     lock.releaseLock();
   }
@@ -250,7 +272,7 @@ function json_(obj) {
 }
 
 function jsonp_(obj, callback) {
-  if (!/^[A-Za-z_$][0-9A-Za-z_$]*(?:\.[A-Za-z_$][0-9A-Za-z_$]*)*$/.test(callback)) {
+  if (!/^[A-Za-z_$][0-9A-Za-z_$]*(?:\.[0-9A-Za-z_$]+)*$/.test(callback)) {
     return json_({ ok: false, error: 'Invalid callback.' });
   }
 
