@@ -34,34 +34,55 @@ function getSpreadsheet_() {
 
 function doGet(e) {
   try {
-    const action = e && e.parameter ? String(e.parameter.action || '') : '';
-    if (action === 'getRequest') return getRequest_(e.parameter.requestId, e.parameter.email);
-    const ss = getSpreadsheet_();
-    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
-    return json_({ok:true,service:'Tamaouz API',spreadsheet:ss.getName(),sheet:sheet ? sheet.getName() : null,rows:sheet ? sheet.getLastRow() : 0});
+    const params = e && e.parameter ? e.parameter : {};
+    const action = String(params.action || '');
+    const callback = String(params.callback || '');
+
+    let result;
+    if (action === 'getRequest') {
+      result = getRequestData_(params.requestId, params.email);
+    } else {
+      const ss = getSpreadsheet_();
+      const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+      result = {ok:true,service:'Tamaouz API',spreadsheet:ss.getName(),sheet:sheet ? sheet.getName() : null,rows:sheet ? sheet.getLastRow() : 0};
+    }
+
+    if (callback) return jsonp_(result, callback);
+    return json_(result);
   } catch(err) {
-    return json_({ok:false,error:String(err.message || err)});
+    const result = {ok:false,error:String(err.message || err)};
+    const callback = e && e.parameter ? String(e.parameter.callback || '') : '';
+    return callback ? jsonp_(result, callback) : json_(result);
   }
 }
 
-function getRequest_(requestId, email) {
+function getRequestData_(requestId, email) {
   const id = String(requestId || '').trim().toUpperCase();
   const mail = String(email || '').trim().toLowerCase();
-  if (!id || !mail) return json_({ok:false,error:'Request ID and email are required.'});
+  if (!id || !mail) return {ok:false,error:'Request ID and email are required.'};
+
   const ss = getSpreadsheet_();
   const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
-  if (!sheet || sheet.getLastRow() < 2) return json_({ok:false,error:'Request not found.'});
+  if (!sheet || sheet.getLastRow() < 2) return {ok:false,error:'Request not found.'};
+
   const values = sheet.getDataRange().getValues();
   const headers = values[0];
   const rows = values.slice(1);
   const idx = {};
   headers.forEach((h,i) => idx[String(h)] = i);
-  const row = rows.find(r => String(r[idx['Request ID']] || '').trim().toUpperCase() === id && String(r[idx['Email']] || '').trim().toLowerCase() === mail);
-  if (!row) return json_({ok:false,error:'Request not found or email does not match.'});
+
+  const row = rows.find(r =>
+    String(r[idx['Request ID']] || '').trim().toUpperCase() === id &&
+    String(r[idx['Email']] || '').trim().toLowerCase() === mail
+  );
+
+  if (!row) return {ok:false,error:'Request not found or email does not match.'};
+
   const created = row[idx['Created At']];
   let dynamic = {};
   try { dynamic = JSON.parse(String(row[idx['Dynamic Requirements']] || '{}')); } catch (_) {}
-  return json_({ok:true,request:{
+
+  return {ok:true,request:{
     requestId:String(row[idx['Request ID']] || ''),
     createdAt:created instanceof Date ? created.toISOString() : String(created || ''),
     requestType:String(row[idx['Request Type']] || ''),
@@ -84,7 +105,7 @@ function getRequest_(requestId, email) {
     dynamicRequirements:dynamic,
     files:String(row[idx['Files']] || ''),
     status:String(row[idx['Status']] || CONFIG.STATUS)
-  }});
+  }};
 }
 
 function doPost(e) {
@@ -126,5 +147,12 @@ function createRequestId_() {
     return 'TM-' + year + '-' + String(count).padStart(5,'0');
   } finally { lock.releaseLock(); }
 }
+
 function safe_(s){ return String(s).replace(/[\\/:*?"<>|]/g,'-').slice(0,80); }
 function json_(obj){ return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
+function jsonp_(obj, callback){
+  if (!/^[A-Za-z_$][0-9A-Za-z_$]*(?:\.[A-Za-z_$][0-9A-Za-z_$]*)*$/.test(callback)) {
+    return json_({ok:false,error:'Invalid callback.'});
+  }
+  return ContentService.createTextOutput(callback + '(' + JSON.stringify(obj) + ');').setMimeType(ContentService.MimeType.JAVASCRIPT);
+}
