@@ -48,14 +48,6 @@ function getSpreadsheet_() {
   throw new Error('Spreadsheet is not configured. Run setupTamaouz once from the Google Sheet Apps Script editor.');
 }
 
-/* =========================
-   GET API
-   Supports:
-   - health check
-   - getRequest
-   - getRequests
-   - JSONP
-========================= */
 function doGet(e) {
   try {
     const params = e && e.parameter ? e.parameter : {};
@@ -67,6 +59,10 @@ function doGet(e) {
       result = getRequestData_(params.requestId, params.email);
     } else if (action === 'getRequests') {
       result = getRequestsData_(params.email);
+    } else if (action === 'getAllRequests') {
+      result = getAllRequestsData_(params.adminPassword);
+    } else if (action === 'updateStatus') {
+      result = updateRequestStatus_(params.requestId, params.status, params.adminPassword);
     } else {
       const ss = getSpreadsheet_();
       const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
@@ -89,61 +85,36 @@ function doGet(e) {
   }
 }
 
-/* =========================
-   GET ONE REQUEST
-========================= */
 function getRequestData_(requestId, email) {
   const id = String(requestId || '').trim().toUpperCase();
   const mail = String(email || '').trim().toLowerCase();
 
-  if (!id || !mail) {
-    return { ok: false, error: 'Request ID and email are required.' };
-  }
+  if (!id || !mail) return { ok: false, error: 'Request ID and email are required.' };
 
   const requests = getAllRequestsForEmail_(mail);
   const request = requests.find(r => String(r.requestId || '').trim().toUpperCase() === id);
 
-  if (!request) {
-    return { ok: false, error: 'Request not found or email does not match.' };
-  }
-
+  if (!request) return { ok: false, error: 'Request not found or email does not match.' };
   return { ok: true, request: request };
 }
 
-/* =========================
-   GET ALL REQUESTS FOR EMAIL
-========================= */
 function getRequestsData_(email) {
   const mail = String(email || '').trim().toLowerCase();
-
-  if (!mail) {
-    return { ok: false, error: 'Email is required.' };
-  }
-
+  if (!mail) return { ok: false, error: 'Email is required.' };
   const requests = getAllRequestsForEmail_(mail);
-
-  return {
-    ok: true,
-    email: mail,
-    count: requests.length,
-    requests: requests
-  };
+  return { ok: true, email: mail, count: requests.length, requests: requests };
 }
 
 function getAllRequestsForEmail_(mail) {
   const ss = getSpreadsheet_();
   const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
-
   if (!sheet || sheet.getLastRow() < 2) return [];
 
   const values = sheet.getDataRange().getValues();
   const headers = values[0];
   const rows = values.slice(1);
   const idx = {};
-
-  headers.forEach((header, index) => {
-    idx[String(header)] = index;
-  });
+  headers.forEach((header, index) => { idx[String(header)] = index; });
 
   const requests = rows
     .filter(row => String(row[idx['Email']] || '').trim().toLowerCase() === mail)
@@ -154,22 +125,83 @@ function getAllRequestsForEmail_(mail) {
     const db = new Date(b.createdAt).getTime() || 0;
     return db - da;
   });
-
   return requests;
 }
 
-/* =========================
-   CONVERT SHEET ROW TO OBJECT
-========================= */
+function getAllRequestsData_(adminPassword) {
+  if (!isAdmin_(adminPassword)) return { ok: false, error: 'Unauthorized.' };
+
+  const ss = getSpreadsheet_();
+  const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+  if (!sheet || sheet.getLastRow() < 2) return { ok: true, count: 0, requests: [] };
+
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  const idx = {};
+  headers.forEach((header, index) => { idx[String(header)] = index; });
+
+  const requests = values.slice(1).map(row => rowToRequest_(row, idx));
+  requests.sort((a, b) => {
+    const da = new Date(a.createdAt).getTime() || 0;
+    const db = new Date(b.createdAt).getTime() || 0;
+    return db - da;
+  });
+
+  return { ok: true, count: requests.length, requests: requests };
+}
+
+function updateRequestStatus_(requestId, status, adminPassword) {
+  if (!isAdmin_(adminPassword)) return { ok: false, error: 'Unauthorized.' };
+
+  const allowed = ['Submitted','Under Review','In Progress','Ready for Review','Completed'];
+  const cleanStatus = String(status || '').trim();
+  const id = String(requestId || '').trim().toUpperCase();
+
+  if (!id || allowed.indexOf(cleanStatus) === -1) {
+    return { ok: false, error: 'Invalid request ID or status.' };
+  }
+
+  const ss = getSpreadsheet_();
+  const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+  if (!sheet || sheet.getLastRow() < 2) return { ok: false, error: 'Request not found.' };
+
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  const idIndex = headers.indexOf('Request ID');
+  const statusIndex = headers.indexOf('Status');
+  if (idIndex === -1 || statusIndex === -1) return { ok: false, error: 'Required columns are missing.' };
+
+  for (let i = 1; i < values.length; i++) {
+    const rowId = String(values[i][idIndex] || '').trim().toUpperCase();
+    if (rowId === id) {
+      sheet.getRange(i + 1, statusIndex + 1).setValue(cleanStatus);
+      SpreadsheetApp.flush();
+      return { ok: true, requestId: id, status: cleanStatus };
+    }
+  }
+
+  return { ok: false, error: 'Request not found.' };
+}
+
+function isAdmin_(password) {
+  const stored = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD');
+  return !!stored && String(password || '') === stored;
+}
+
+function setAdminPassword() {
+  const ui = SpreadsheetApp.getUi();
+  const response = ui.prompt('Tamaouz Admin', 'Enter a strong admin password:', ui.ButtonSet.OK_CANCEL);
+  if (response.getSelectedButton() !== ui.Button.OK) return 'Cancelled';
+  const password = String(response.getResponseText() || '').trim();
+  if (password.length < 8) throw new Error('Admin password must be at least 8 characters.');
+  PropertiesService.getScriptProperties().setProperty('ADMIN_PASSWORD', password);
+  return 'Admin password saved';
+}
+
 function rowToRequest_(row, idx) {
   const created = row[idx['Created At']];
-
   let dynamic = {};
-  try {
-    dynamic = JSON.parse(String(row[idx['Dynamic Requirements']] || '{}'));
-  } catch (_) {
-    dynamic = {};
-  }
+  try { dynamic = JSON.parse(String(row[idx['Dynamic Requirements']] || '{}')); } catch (_) { dynamic = {}; }
 
   return {
     requestId: String(row[idx['Request ID']] || ''),
@@ -197,148 +229,60 @@ function rowToRequest_(row, idx) {
   };
 }
 
-/* =========================
-   POST API
-========================= */
 function doPost(e) {
   try {
-    const raw =
-      (e && e.parameter && e.parameter.payload) ||
-      (e && e.postData && e.postData.contents) || '{}';
-
+    const raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}';
     const data = JSON.parse(raw);
-
-    if (data.action !== 'submitRequest') {
-      throw new Error('Unsupported action');
-    }
+    if (data.action !== 'submitRequest') throw new Error('Unsupported action');
 
     const ss = getSpreadsheet_();
     const sheet = ss.getSheetByName(CONFIG.SHEET_NAME) || ss.insertSheet(CONFIG.SHEET_NAME);
-
     setupTamaouz();
 
     const id = data.requestId || createRequestId_();
-
-    const folder = DriveApp.getFolderById(
-      PropertiesService.getScriptProperties().getProperty('DRIVE_FOLDER_ID')
-    );
-
-    const requestFolder = folder.createFolder(
-      id + ' - ' + safe_(data.fullName || 'Student')
-    );
-
+    const folder = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('DRIVE_FOLDER_ID'));
+    const requestFolder = folder.createFolder(id + ' - ' + safe_(data.fullName || 'Student'));
     const fileLinks = [];
 
     (data.files || []).forEach(file => {
       if (!file.name || !file.base64) return;
-
       const bytes = Utilities.base64Decode(file.base64);
-      const blob = Utilities.newBlob(
-        bytes,
-        file.mimeType || 'application/octet-stream',
-        file.name
-      );
-
+      const blob = Utilities.newBlob(bytes, file.mimeType || 'application/octet-stream', file.name);
       const created = requestFolder.createFile(blob);
       fileLinks.push(created.getUrl());
     });
 
     sheet.appendRow([
-      id,
-      new Date(),
-      data.requestType || '',
-      data.fullName || '',
-      data.title || '',
-      data.workplace || '',
-      data.department || '',
-      data.level || '',
-      data.city || '',
-      data.country || '',
-      data.email || '',
-      data.mobile || '',
-      data.projectTitle || '',
-      data.pages || '',
-      data.references || '',
-      data.citation || '',
-      data.deadline || '',
-      data.topic || '',
-      data.instructions || '',
-      JSON.stringify(data.dynamicRequirements || {}),
-      fileLinks.join('\n'),
-      CONFIG.STATUS
+      id,new Date(),data.requestType || '',data.fullName || '',data.title || '',data.workplace || '',data.department || '',data.level || '',data.city || '',data.country || '',data.email || '',data.mobile || '',data.projectTitle || '',data.pages || '',data.references || '',data.citation || '',data.deadline || '',data.topic || '',data.instructions || '',JSON.stringify(data.dynamicRequirements || {}),fileLinks.join('\n'),CONFIG.STATUS
     ]);
 
     SpreadsheetApp.flush();
-
-    return json_({
-      ok: true,
-      requestId: id,
-      status: CONFIG.STATUS,
-      folderUrl: requestFolder.getUrl()
-    });
-
+    return json_({ ok: true, requestId: id, status: CONFIG.STATUS, folderUrl: requestFolder.getUrl() });
   } catch (err) {
     console.error(err);
-    return json_({
-      ok: false,
-      error: String(err.message || err)
-    });
+    return json_({ ok: false, error: String(err.message || err) });
   }
 }
 
-/* =========================
-   CREATE REQUEST ID
-========================= */
 function createRequestId_() {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
-
   try {
     const props = PropertiesService.getScriptProperties();
     const year = new Date().getFullYear();
     const count = Number(props.getProperty('REQUEST_COUNTER') || 0) + 1;
-
     props.setProperty('REQUEST_COUNTER', String(count));
-
     return 'TM-' + year + '-' + String(count).padStart(5, '0');
-
-  } finally {
-    lock.releaseLock();
-  }
+  } finally { lock.releaseLock(); }
 }
 
-/* =========================
-   SAFE NAME
-========================= */
-function safe_(s) {
-  return String(s)
-    .replace(/[\\/:*?"<>|]/g, '-')
-    .slice(0, 80);
-}
+function safe_(s) { return String(s).replace(/[\\/:*?"<>|]/g, '-').slice(0, 80); }
 
-/* =========================
-   JSON
-========================= */
 function json_(obj) {
-  return ContentService
-    .createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
-/* =========================
-   JSONP
-========================= */
 function jsonp_(obj, callback) {
-  if (!/^[A-Za-z_$][0-9A-Za-z_$]*(?:\.[A-Za-z_$][0-9A-Za-z_$]*)*$/.test(callback)) {
-    return json_({
-      ok: false,
-      error: 'Invalid callback.'
-    });
-  }
-
-  return ContentService
-    .createTextOutput(
-      callback + '(' + JSON.stringify(obj) + ');'
-    )
-    .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  if (!/^[A-Za-z_$][0-9A-Za-z_$]*(?:\.[A-Za-z_$][0-9A-Za-z_$]*)*$/.test(callback)) return json_({ ok: false, error: 'Invalid callback.' });
+  return ContentService.createTextOutput(callback + '(' + JSON.stringify(obj) + ');').setMimeType(ContentService.MimeType.JAVASCRIPT);
 }
