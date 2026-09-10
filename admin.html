@@ -1,18 +1,29 @@
 <!doctype html>
-<html lang="en" dir="ltr">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Tamaouz | Admin Dashboard</title><link rel="stylesheet" href="dashboard.css"></head>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tamaouz Admin Dashboard">
+<title>Tamaouz | Admin Dashboard</title>
+<link rel="stylesheet" href="admin.css">
+</head>
 <body>
-<header class="topbar"><a class="brand" href="index.html"><span>T</span><strong>TAMAOUZ</strong></a><div class="top-actions"><a href="dashboard.html" data-i18n="studentDashboard">Student Dashboard</a><button id="languageToggle" class="language-toggle" type="button">العربية</button></div></header>
+<header class="topbar">
+  <a class="brand" href="index.html" aria-label="Tamaouz home"><img src="logo.jpg" alt="Tamaouz Research & Publication Consultancy"></a>
+  <div class="top-actions"><a href="index.html" data-i18n="home">الموقع الرئيسي</a><a href="dashboard.html" data-i18n="studentDashboard">لوحة الطالب</a><button id="languageToggle" class="language-toggle" type="button">English</button></div>
+</header>
 <main class="wrap">
-  <div class="page-head"><div><p class="eyebrow" data-i18n="eyebrow">ADMINISTRATION</p><h1 data-i18n="title">Request Management</h1><p data-i18n="subtitle">Review submitted requests and update their workflow status.</p></div></div>
-  <div class="admin-tools"><input id="search" placeholder="Search by ID, name or request type"><select id="statusFilter"><option value="">All statuses</option><option value="Submitted">Submitted</option><option value="Under Review">Under Review</option><option value="In Progress">In Progress</option><option value="Ready for Review">Ready for Review</option><option value="Completed">Completed</option></select></div>
-  <section id="adminList" class="request-list"></section>
+  <section class="page-head"><div><p class="eyebrow" data-i18n="eyebrow">ADMIN DASHBOARD</p><h1 data-i18n="title">إدارة الطلبات</h1><p data-i18n="subtitle">إدارة طلبات الطلاب ومتابعة حالتها من مكان واحد.</p></div></section>
+  <section id="loginCard" class="panel login-panel">
+    <h2 data-i18n="loginTitle">دخول الإدارة</h2><p data-i18n="loginText">أدخل كلمة مرور الإدارة للوصول إلى الطلبات.</p>
+    <form id="loginForm" class="login-form" novalidate><label><span data-i18n="password">كلمة المرور</span><input id="adminPassword" type="password" required autocomplete="current-password"></label><button class="btn" type="submit" data-i18n="login">دخول</button></form>
+    <p id="loginMessage" class="message" hidden></p>
+  </section>
+  <section id="dashboard" hidden>
+    <div class="panel toolbar"><div id="stats" class="stats"></div><div class="filters"><input id="search" type="search" data-i18n-placeholder="searchPlaceholder" placeholder="بحث برقم الطلب أو الاسم أو البريد"><select id="statusFilter"><option value="" data-i18n="allStatuses">كل الحالات</option><option value="Submitted" data-i18n="submitted">تم الإرسال</option><option value="Under Review" data-i18n="underReview">قيد المراجعة</option><option value="In Progress" data-i18n="inProgress">قيد التنفيذ</option><option value="Ready for Review" data-i18n="ready">جاهز للمراجعة</option><option value="Completed" data-i18n="completed">مكتمل</option></select><button id="refresh" class="btn secondary" type="button" data-i18n="refresh">تحديث</button></div></div>
+    <section id="requests" class="requests"></section><p id="dashboardMessage" class="message" hidden></p>
+  </section>
 </main>
-<script src="dashboard.js"></script>
-<script>
-const adminTranslations={en:{studentDashboard:'Student Dashboard',eyebrow:'ADMINISTRATION',title:'Request Management',subtitle:'Review submitted requests and update their workflow status.',search:'Search by ID, name or request type',all:'All statuses'},ar:{studentDashboard:'لوحة الطالب',eyebrow:'الإدارة',title:'إدارة الطلبات',subtitle:'راجع الطلبات المرسلة وحدّث حالة سير العمل.',search:'البحث برقم الطلب أو الاسم أو نوع الطلب',all:'جميع الحالات'}};
-function applyAdminText(){const l=localStorage.getItem('tamaouz_language')||'en';const x=adminTranslations[l];document.getElementById('search').placeholder=x.search;document.getElementById('statusFilter').options[0].text=x.all;document.querySelectorAll('[data-i18n]').forEach(e=>e.textContent=x[e.dataset.i18n]||e.textContent);}
-applyAdminText();
-document.getElementById('languageToggle').addEventListener('click',()=>{const l=localStorage.getItem('tamaouz_language')||'en';localStorage.setItem('tamaouz_language',l==='en'?'ar':'en');location.reload();});
-</script>
+<footer>© 2026 Tamaouz — Research &amp; Publication Consultancy</footer>
+<script src="admin.js"></script>
 </body></html>
