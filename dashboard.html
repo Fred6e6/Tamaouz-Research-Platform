@@ -1,12 +1,35 @@
 <!doctype html>
 <html lang="en" dir="ltr">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Tamaouz | Student Dashboard</title><link rel="stylesheet" href="dashboard.css"></head>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Tamaouz Student Dashboard">
+  <title>Tamaouz | Student Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
 <body>
-<header class="topbar"><a class="brand" href="index.html"><span>T</span><strong>TAMAOUZ</strong></a><div class="top-actions"><a href="index.html" data-i18n="newRequest">New Request</a><button id="languageToggle" class="language-toggle" type="button">العربية</button></div></header>
+<header class="topbar">
+  <a class="brand" href="index.html" aria-label="Tamaouz home"><img src="logo.jpg" alt="Tamaouz Research & Publication Consultancy"></a>
+  <div class="top-actions"><a href="index.html#request" data-i18n="newRequest">New Request</a><button id="languageToggle" class="language-toggle" type="button">العربية</button></div>
+</header>
 <main class="wrap">
-  <div class="page-head"><div><p class="eyebrow" data-i18n="eyebrow">STUDENT DASHBOARD</p><h1 data-i18n="title">My Requests</h1><p data-i18n="subtitle">Track your academic requests and their current status.</p></div><a class="btn" href="index.html#request" data-i18n="create">Create New Request</a></div>
-  <section id="empty" class="empty" hidden><h2 data-i18n="emptyTitle">No requests yet</h2><p data-i18n="emptyText">Your submitted requests will appear here.</p><a class="btn" href="index.html#request" data-i18n="start">Start a Request</a></section>
-  <section id="requestList" class="request-list"></section>
+  <section class="page-head">
+    <div><p class="eyebrow" data-i18n="eyebrow">STUDENT DASHBOARD</p><h1 data-i18n="title">Track your request</h1><p data-i18n="subtitle">Enter your request ID and the email used when you submitted it.</p></div>
+    <a class="btn" href="index.html#request" data-i18n="create">Create New Request</a>
+  </section>
+
+  <section class="lookup-card">
+    <form id="lookupForm" novalidate>
+      <label><span data-i18n="requestId">Request ID</span><input id="requestId" required autocomplete="off" placeholder="TM-2026-00001"></label>
+      <label><span data-i18n="email">Email Address</span><input id="email" required type="email" autocomplete="email" placeholder="name@example.com"></label>
+      <button class="btn" type="submit" data-i18n="track">Track Request</button>
+    </form>
+    <p id="message" class="message" hidden></p>
+  </section>
+
+  <section id="requestResult" class="result" hidden></section>
 </main>
+<footer><span>© 2026 Tamaouz — Research &amp; Publication Consultancy</span></footer>
 <script src="dashboard.js"></script>
-</body></html>
+</body>
+</html>
