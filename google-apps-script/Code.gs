@@ -6,9 +6,7 @@ const CONFIG = {
 
 function setupTamaouz() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss) {
-    throw new Error('No active spreadsheet found. Open Apps Script from the target Google Sheet and run setupTamaouz.');
-  }
+  if (!ss) throw new Error('No active spreadsheet found. Open Apps Script from the target Google Sheet and run setupTamaouz.');
 
   PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', ss.getId());
 
@@ -16,16 +14,17 @@ function setupTamaouz() {
   if (!sheet) sheet = ss.insertSheet(CONFIG.SHEET_NAME);
 
   const headers = [
-    'Request ID', 'Created At', 'Request Type', 'Full Name',
-    'Academic / Job Title', 'University / Workplace', 'College / Department',
-    'Academic Level', 'City', 'Country', 'Email', 'Mobile', 'Project Title',
-    'Pages', 'References', 'Citation Style', 'Deadline', 'Topic', 'Instructions',
-    'Dynamic Requirements', 'Files', 'Status'
+    'Request ID','Created At','Request Type','Full Name',
+    'Academic / Job Title','University / Workplace','College / Department',
+    'Academic Level','City','Country','Email','Mobile','Project Title',
+    'Pages','References','Citation Style','Deadline','Topic','Instructions',
+    'Dynamic Requirements','Files','Status'
   ];
 
   if (sheet.getLastRow() === 0) sheet.appendRow(headers);
 
   const props = PropertiesService.getScriptProperties();
+
   if (!props.getProperty('DRIVE_FOLDER_ID')) {
     const folder = DriveApp.createFolder(CONFIG.DRIVE_FOLDER_NAME);
     props.setProperty('DRIVE_FOLDER_ID', folder.getId());
@@ -49,6 +48,14 @@ function getSpreadsheet_() {
   throw new Error('Spreadsheet is not configured. Run setupTamaouz once from the Google Sheet Apps Script editor.');
 }
 
+/* =========================
+   GET API
+   Supports:
+   - health check
+   - getRequest
+   - getRequests
+   - JSONP
+========================= */
 function doGet(e) {
   try {
     const params = e && e.parameter ? e.parameter : {};
@@ -74,6 +81,7 @@ function doGet(e) {
 
     if (callback) return jsonp_(result, callback);
     return json_(result);
+
   } catch (err) {
     const result = { ok: false, error: String(err.message || err) };
     const callback = e && e.parameter ? String(e.parameter.callback || '') : '';
@@ -81,6 +89,9 @@ function doGet(e) {
   }
 }
 
+/* =========================
+   GET ONE REQUEST
+========================= */
 function getRequestData_(requestId, email) {
   const id = String(requestId || '').trim().toUpperCase();
   const mail = String(email || '').trim().toLowerCase();
@@ -90,7 +101,7 @@ function getRequestData_(requestId, email) {
   }
 
   const requests = getAllRequestsForEmail_(mail);
-  const request = requests.find(r => String(r.requestId).trim().toUpperCase() === id);
+  const request = requests.find(r => String(r.requestId || '').trim().toUpperCase() === id);
 
   if (!request) {
     return { ok: false, error: 'Request not found or email does not match.' };
@@ -99,6 +110,9 @@ function getRequestData_(requestId, email) {
   return { ok: true, request: request };
 }
 
+/* =========================
+   GET ALL REQUESTS FOR EMAIL
+========================= */
 function getRequestsData_(email) {
   const mail = String(email || '').trim().toLowerCase();
 
@@ -127,50 +141,65 @@ function getAllRequestsForEmail_(mail) {
   const rows = values.slice(1);
   const idx = {};
 
-  headers.forEach((h, i) => { idx[String(h)] = i; });
+  headers.forEach((header, index) => {
+    idx[String(header)] = index;
+  });
 
-  return rows
+  const requests = rows
     .filter(row => String(row[idx['Email']] || '').trim().toLowerCase() === mail)
-    .map(rowToRequest_)
-    .reverse();
+    .map(row => rowToRequest_(row, idx));
+
+  requests.sort((a, b) => {
+    const da = new Date(a.createdAt).getTime() || 0;
+    const db = new Date(b.createdAt).getTime() || 0;
+    return db - da;
+  });
+
+  return requests;
 }
 
-function rowToRequest_(row) {
-  const created = row[1];
-  let dynamic = {};
+/* =========================
+   CONVERT SHEET ROW TO OBJECT
+========================= */
+function rowToRequest_(row, idx) {
+  const created = row[idx['Created At']];
 
+  let dynamic = {};
   try {
-    dynamic = JSON.parse(String(row[19] || '{}'));
+    dynamic = JSON.parse(String(row[idx['Dynamic Requirements']] || '{}'));
   } catch (_) {
     dynamic = {};
   }
 
   return {
-    requestId: String(row[0] || ''),
+    requestId: String(row[idx['Request ID']] || ''),
     createdAt: created instanceof Date ? created.toISOString() : String(created || ''),
-    requestType: String(row[2] || ''),
-    fullName: String(row[3] || ''),
-    title: String(row[4] || ''),
-    workplace: String(row[5] || ''),
-    department: String(row[6] || ''),
-    level: String(row[7] || ''),
-    city: String(row[8] || ''),
-    country: String(row[9] || ''),
-    email: String(row[10] || ''),
-    mobile: String(row[11] || ''),
-    projectTitle: String(row[12] || ''),
-    pages: String(row[13] || ''),
-    references: String(row[14] || ''),
-    citation: String(row[15] || ''),
-    deadline: String(row[16] || ''),
-    topic: String(row[17] || ''),
-    instructions: String(row[18] || ''),
+    requestType: String(row[idx['Request Type']] || ''),
+    fullName: String(row[idx['Full Name']] || ''),
+    title: String(row[idx['Academic / Job Title']] || ''),
+    workplace: String(row[idx['University / Workplace']] || ''),
+    department: String(row[idx['College / Department']] || ''),
+    level: String(row[idx['Academic Level']] || ''),
+    city: String(row[idx['City']] || ''),
+    country: String(row[idx['Country']] || ''),
+    email: String(row[idx['Email']] || ''),
+    mobile: String(row[idx['Mobile']] || ''),
+    projectTitle: String(row[idx['Project Title']] || ''),
+    pages: String(row[idx['Pages']] || ''),
+    references: String(row[idx['References']] || ''),
+    citation: String(row[idx['Citation Style']] || ''),
+    deadline: String(row[idx['Deadline']] || ''),
+    topic: String(row[idx['Topic']] || ''),
+    instructions: String(row[idx['Instructions']] || ''),
     dynamicRequirements: dynamic,
-    files: String(row[20] || ''),
-    status: String(row[21] || CONFIG.STATUS)
+    files: String(row[idx['Files']] || ''),
+    status: String(row[idx['Status']] || CONFIG.STATUS)
   };
 }
 
+/* =========================
+   POST API
+========================= */
 function doPost(e) {
   try {
     const raw =
@@ -178,18 +207,26 @@ function doPost(e) {
       (e && e.postData && e.postData.contents) || '{}';
 
     const data = JSON.parse(raw);
-    if (data.action !== 'submitRequest') throw new Error('Unsupported action');
+
+    if (data.action !== 'submitRequest') {
+      throw new Error('Unsupported action');
+    }
 
     const ss = getSpreadsheet_();
     const sheet = ss.getSheetByName(CONFIG.SHEET_NAME) || ss.insertSheet(CONFIG.SHEET_NAME);
+
     setupTamaouz();
 
     const id = data.requestId || createRequestId_();
+
     const folder = DriveApp.getFolderById(
       PropertiesService.getScriptProperties().getProperty('DRIVE_FOLDER_ID')
     );
 
-    const requestFolder = folder.createFolder(id + ' - ' + safe_(data.fullName || 'Student'));
+    const requestFolder = folder.createFolder(
+      id + ' - ' + safe_(data.fullName || 'Student')
+    );
+
     const fileLinks = [];
 
     (data.files || []).forEach(file => {
@@ -239,12 +276,19 @@ function doPost(e) {
       status: CONFIG.STATUS,
       folderUrl: requestFolder.getUrl()
     });
+
   } catch (err) {
     console.error(err);
-    return json_({ ok: false, error: String(err.message || err) });
+    return json_({
+      ok: false,
+      error: String(err.message || err)
+    });
   }
 }
 
+/* =========================
+   CREATE REQUEST ID
+========================= */
 function createRequestId_() {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -255,28 +299,46 @@ function createRequestId_() {
     const count = Number(props.getProperty('REQUEST_COUNTER') || 0) + 1;
 
     props.setProperty('REQUEST_COUNTER', String(count));
+
     return 'TM-' + year + '-' + String(count).padStart(5, '0');
+
   } finally {
     lock.releaseLock();
   }
 }
 
+/* =========================
+   SAFE NAME
+========================= */
 function safe_(s) {
-  return String(s).replace(/[\\/:*?"<>|]/g, '-').slice(0, 80);
+  return String(s)
+    .replace(/[\\/:*?"<>|]/g, '-')
+    .slice(0, 80);
 }
 
+/* =========================
+   JSON
+========================= */
 function json_(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+/* =========================
+   JSONP
+========================= */
 function jsonp_(obj, callback) {
-  if (!/^[A-Za-z_$][0-9A-Za-z_$]*(?:\.[0-9A-Za-z_$]+)*$/.test(callback)) {
-    return json_({ ok: false, error: 'Invalid callback.' });
+  if (!/^[A-Za-z_$][0-9A-Za-z_$]*(?:\.[A-Za-z_$][0-9A-Za-z_$]*)*$/.test(callback)) {
+    return json_({
+      ok: false,
+      error: 'Invalid callback.'
+    });
   }
 
   return ContentService
-    .createTextOutput(callback + '(' + JSON.stringify(obj) + ');')
+    .createTextOutput(
+      callback + '(' + JSON.stringify(obj) + ');'
+    )
     .setMimeType(ContentService.MimeType.JAVASCRIPT);
 }
