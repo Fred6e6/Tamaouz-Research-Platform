@@ -1,7 +1,8 @@
 const CONFIG = {
   SHEET_NAME: 'Requests',
   DRIVE_FOLDER_NAME: 'Tamaouz Requests',
-  STATUS: 'Submitted'
+  STATUS: 'Submitted',
+  COMPLAINTS_SHEET_NAME: 'Complaints'
 };
 
 function setupTamaouz() {
@@ -23,6 +24,15 @@ function setupTamaouz() {
 
   if (sheet.getLastRow() === 0) sheet.appendRow(headers);
 
+  let complaints = ss.getSheetByName(CONFIG.COMPLAINTS_SHEET_NAME);
+  if (!complaints) complaints = ss.insertSheet(CONFIG.COMPLAINTS_SHEET_NAME);
+  if (complaints.getLastRow() === 0) {
+    complaints.appendRow([
+      'Complaint ID','Created At','Type','Full Name','Email','Mobile',
+      'Request ID','Subject','Message','Language','Status'
+    ]);
+  }
+
   const props = PropertiesService.getScriptProperties();
 
   if (!props.getProperty('DRIVE_FOLDER_ID')) {
@@ -32,6 +42,10 @@ function setupTamaouz() {
 
   if (!props.getProperty('REQUEST_COUNTER')) {
     props.setProperty('REQUEST_COUNTER', String(Math.max(0, sheet.getLastRow() - 1)));
+  }
+
+  if (!props.getProperty('COMPLAINT_COUNTER')) {
+    props.setProperty('COMPLAINT_COUNTER', String(Math.max(0, complaints.getLastRow() - 1)));
   }
 
   SpreadsheetApp.flush();
@@ -233,6 +247,11 @@ function doPost(e) {
   try {
     const raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}';
     const data = JSON.parse(raw);
+
+    if (data.action === 'submitComplaint') {
+      return json_(submitComplaint_(data));
+    }
+
     if (data.action !== 'submitRequest') throw new Error('Unsupported action');
 
     const ss = getSpreadsheet_();
@@ -262,6 +281,49 @@ function doPost(e) {
     console.error(err);
     return json_({ ok: false, error: String(err.message || err) });
   }
+}
+
+function submitComplaint_(data) {
+  const required = ['fullName','email','type','subject','message'];
+  required.forEach(key => {
+    if (!String(data[key] || '').trim()) throw new Error(key + ' is required.');
+  });
+
+  const ss = getSpreadsheet_();
+  const sheet = ss.getSheetByName(CONFIG.COMPLAINTS_SHEET_NAME);
+  if (!sheet) throw new Error('Complaints sheet is not configured. Run setupTamaouz once.');
+
+  const id = createComplaintId_();
+  const status = 'New';
+
+  sheet.appendRow([
+    id,
+    new Date(),
+    String(data.type || '').trim(),
+    String(data.fullName || '').trim(),
+    String(data.email || '').trim().toLowerCase(),
+    String(data.mobile || '').trim(),
+    String(data.requestId || '').trim().toUpperCase(),
+    String(data.subject || '').trim(),
+    String(data.message || '').trim(),
+    String(data.language || 'ar').trim(),
+    status
+  ]);
+
+  SpreadsheetApp.flush();
+  return { ok: true, complaintId: id, status: status };
+}
+
+function createComplaintId_() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const year = new Date().getFullYear();
+    const count = Number(props.getProperty('COMPLAINT_COUNTER') || 0) + 1;
+    props.setProperty('COMPLAINT_COUNTER', String(count));
+    return 'CM-' + year + '-' + String(count).padStart(5, '0');
+  } finally { lock.releaseLock(); }
 }
 
 function createRequestId_() {
