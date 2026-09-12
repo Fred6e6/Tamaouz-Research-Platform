@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Tamaouz customer service and complaints. تواصل مع تميّز وخدمات الشكاوى والاستفسارات.">
+  <title>Tamaouz | Customer Service</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="support.css">
+</head>
+<body dir="rtl">
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="brand" href="index.html" aria-label="Tamaouz home"><img class="brand-logo" src="logo.jpg" alt="Tamaouz Research & Publication Consultancy"></a>
+      <nav>
+        <a href="index.html" data-i18n="home">الرئيسية</a>
+        <a href="dashboard.html" data-i18n="track">متابعة الطلبات</a>
+        <button id="languageToggle" class="language-toggle" type="button">English</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="support-hero">
+      <div class="container support-hero-inner">
+        <span class="eyebrow" data-i18n="eyebrow">CUSTOMER SERVICE</span>
+        <h1 data-i18n="title">الشكاوى وخدمة العملاء</h1>
+        <p data-i18n="intro">نحن هنا لمساعدتك. أرسل استفسارك أو شكواك وسنتابعها معك.</p>
+        <div class="support-actions">
+          <a class="btn" href="#contact" data-i18n="send">إرسال طلب تواصل</a>
+          <a class="btn btn-ghost" href="dashboard.html" data-i18n="trackBtn">متابعة الطلبات</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" class="section">
+      <div class="container support-grid">
+        <div class="support-info">
+          <span class="eyebrow" data-i18n="helpEyebrow">WE ARE HERE TO HELP</span>
+          <h2 data-i18n="helpTitle">كيف يمكننا مساعدتك؟</h2>
+          <p data-i18n="helpText">اختر نوع التواصل المناسب، وأدخل بياناتك بدقة حتى نتمكن من الرد ومتابعة الموضوع.</p>
+          <div class="help-cards">
+            <div><span>🔎</span><strong data-i18n="card1">استفسار عن طلب</strong><p data-i18n="card1t">استفسر عن حالة طلبك أو أي تفاصيل مرتبطة به.</p></div>
+            <div><span>⚠️</span><strong data-i18n="card2">شكوى</strong><p data-i18n="card2t">أرسل شكوى تتعلق بالخدمة أو الطلب لمراجعتها.</p></div>
+            <div><span>🛠️</span><strong data-i18n="card3">مشكلة تقنية</strong><p data-i18n="card3t">أبلغنا عن أي مشكلة تواجهك في الموقع أو الطلب.</p></div>
+            <div><span>💬</span><strong data-i18n="card4">استفسار عام</strong><p data-i18n="card4t">لأي سؤال آخر عن خدمات تميّز.</p></div>
+          </div>
+        </div>
+
+        <div class="support-form-card">
+          <form id="supportForm" novalidate>
+            <label><span data-i18n="name">الاسم الكامل</span> *<input required name="fullName" autocomplete="name"></label>
+            <label><span data-i18n="email">البريد الإلكتروني</span> *<input required type="email" name="email" autocomplete="email"></label>
+            <label><span data-i18n="mobile">رقم الجوال</span><input name="mobile" autocomplete="tel"></label>
+            <label><span data-i18n="requestId">رقم الطلب</span><small data-i18n="optional"> (اختياري)</small><input name="requestId" placeholder="TM-2026-00001"></label>
+            <label><span data-i18n="type">نوع التواصل</span> *
+              <select required name="type">
+                <option value="" data-i18n="choose">اختر</option>
+                <option value="Complaint" data-i18n="complaint">شكوى</option>
+                <option value="Request Inquiry" data-i18n="inquiry">استفسار عن طلب</option>
+                <option value="Technical Issue" data-i18n="technical">مشكلة تقنية</option>
+                <option value="General Inquiry" data-i18n="general">استفسار عام</option>
+                <option value="Other" data-i18n="other">أخرى</option>
+              </select>
+            </label>
+            <label><span data-i18n="subject">الموضوع</span> *<input required name="subject"></label>
+            <label><span data-i18n="message">الرسالة</span> *<textarea required name="message" rows="7"></textarea></label>
+            <button class="btn" type="submit" data-i18n="submit">إرسال</button>
+            <p id="formMessage" class="form-message" hidden></p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="section light faq-section">
+      <div class="container">
+        <div class="section-heading"><span class="eyebrow" data-i18n="faqEyebrow">SUPPORT</span><h2 data-i18n="faqTitle">معلومات مهمة</h2></div>
+        <div class="faq-grid">
+          <div><strong data-i18n="faq1q">هل أحتاج رقم طلب؟</strong><p data-i18n="faq1a">ليس دائمًا. يُفضّل إدخاله إذا كان الاستفسار أو الشكوى مرتبطًا بطلب سابق.</p></div>
+          <div><strong data-i18n="faq2q">كيف أتابع طلبي؟</strong><p data-i18n="faq2a">يمكنك استخدام صفحة متابعة الطلبات وإدخال البريد الإلكتروني المرتبط بالطلب.</p></div>
+          <div><strong data-i18n="faq3q">ماذا يحدث بعد إرسال الشكوى؟</strong><p data-i18n="faq3a">يتم تسجيل الطلب لدى خدمة العملاء ليتم مراجعته ومتابعته.</p></div>
+          <div><strong data-i18n="faq4q">هل يمكنني إرسال استفسار عام؟</strong><p data-i18n="faq4a">نعم، اختر «استفسار عام» واكتب سؤالك بالتفصيل.</p></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="container"><span>© 2026 Tamaouz — Research &amp; Publication Consultancy</span><span>نكتب التميز... ونصنع الأثر</span></div></footer>
+  <script src="support.js"></script>
+</body>
+</html>
