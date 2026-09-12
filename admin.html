@@ -1,29 +1,20 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Tamaouz Admin Dashboard">
-<title>Tamaouz | Admin Dashboard</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tamaouz Admin Dashboard"><title>Tamaouz | Admin Dashboard</title>
 <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-<header class="topbar">
-  <a class="brand" href="index.html" aria-label="Tamaouz home"><img src="logo.jpg" alt="Tamaouz Research & Publication Consultancy"></a>
-  <div class="top-actions"><a href="index.html" data-i18n="home">الموقع الرئيسي</a><a href="dashboard.html" data-i18n="studentDashboard">لوحة الطالب</a><button id="languageToggle" class="language-toggle" type="button">English</button></div>
-</header>
+<header class="topbar"><a class="brand" href="index.html" aria-label="Tamaouz home"><img src="logo.jpg" alt="Tamaouz Research & Publication Consultancy"></a><div class="top-actions"><a href="index.html" data-i18n="home">الموقع الرئيسي</a><a href="dashboard.html" data-i18n="studentDashboard">لوحة الطالب</a><button id="languageToggle" class="language-toggle" type="button">English</button></div></header>
 <main class="wrap">
-  <section class="page-head"><div><p class="eyebrow" data-i18n="eyebrow">ADMIN DASHBOARD</p><h1 data-i18n="title">إدارة الطلبات</h1><p data-i18n="subtitle">إدارة طلبات الطلاب ومتابعة حالتها من مكان واحد.</p></div></section>
-  <section id="loginCard" class="panel login-panel">
-    <h2 data-i18n="loginTitle">دخول الإدارة</h2><p data-i18n="loginText">أدخل كلمة مرور الإدارة للوصول إلى الطلبات.</p>
-    <form id="loginForm" class="login-form" novalidate><label><span data-i18n="password">كلمة المرور</span><input id="adminPassword" type="password" required autocomplete="current-password"></label><button class="btn" type="submit" data-i18n="login">دخول</button></form>
-    <p id="loginMessage" class="message" hidden></p>
-  </section>
-  <section id="dashboard" hidden>
-    <div class="panel toolbar"><div id="stats" class="stats"></div><div class="filters"><input id="search" type="search" data-i18n-placeholder="searchPlaceholder" placeholder="بحث برقم الطلب أو الاسم أو البريد"><select id="statusFilter"><option value="" data-i18n="allStatuses">كل الحالات</option><option value="Submitted" data-i18n="submitted">تم الإرسال</option><option value="Under Review" data-i18n="underReview">قيد المراجعة</option><option value="In Progress" data-i18n="inProgress">قيد التنفيذ</option><option value="Ready for Review" data-i18n="ready">جاهز للمراجعة</option><option value="Completed" data-i18n="completed">مكتمل</option></select><button id="refresh" class="btn secondary" type="button" data-i18n="refresh">تحديث</button></div></div>
-    <section id="requests" class="requests"></section><p id="dashboardMessage" class="message" hidden></p>
-  </section>
-</main>
-<footer>© 2026 Tamaouz — Research &amp; Publication Consultancy</footer>
-<script src="admin.js"></script>
+<section class="page-head"><p class="eyebrow" data-i18n="eyebrow">لوحة الإدارة</p><h1 data-i18n="title">إدارة الطلبات وخدمة العملاء</h1><p data-i18n="subtitle">إدارة الطلبات والشكاوى ومتابعة سير العمل من مكان واحد.</p></section>
+<section id="loginCard" class="panel login-panel"><h2 data-i18n="loginTitle">دخول الإدارة</h2><p data-i18n="loginText">أدخل كلمة مرور الإدارة للوصول إلى لوحة الإدارة.</p><form id="loginForm" class="login-form" novalidate><label><span data-i18n="password">كلمة المرور</span><input id="adminPassword" type="password" required autocomplete="current-password"></label><button class="btn" type="submit" data-i18n="login">دخول</button></form><p id="loginMessage" class="message" hidden></p></section>
+<section id="dashboard" hidden>
+<div class="tabs"><button class="tab active" data-tab="requests" data-i18n="requestsTab">الطلبات</button><button class="tab" data-tab="complaints" data-i18n="complaintsTab">الشكاوى وخدمة العملاء</button></div>
+<div id="requestsTabPanel"><div class="panel toolbar"><div id="stats" class="stats"></div><div class="filters"><input id="search" type="search" data-i18n-placeholder="searchPlaceholder" placeholder="بحث برقم الطلب أو الاسم أو البريد"><select id="statusFilter"><option value="" data-i18n="allStatuses">كل الحالات</option><option value="Submitted" data-i18n="submitted">تم الإرسال</option><option value="Under Review" data-i18n="underReview">قيد المراجعة</option><option value="In Progress" data-i18n="inProgress">قيد التنفيذ</option><option value="Ready for Review" data-i18n="ready">جاهز للمراجعة</option><option value="Completed" data-i18n="completed">مكتمل</option></select><button id="refresh" class="btn secondary" type="button" data-i18n="refresh">تحديث</button></div></div><section id="requests" class="requests"></section></div>
+<div id="complaintsTabPanel" hidden><div class="panel toolbar"><div id="complaintStats" class="stats"></div><div class="filters"><input id="complaintSearch" type="search" data-i18n-placeholder="complaintSearch" placeholder="بحث برقم الشكوى أو الاسم أو البريد أو الطلب"><select id="complaintStatusFilter"><option value="" data-i18n="allComplaintStatuses">كل الحالات</option><option value="New" data-i18n="newComplaint">جديدة</option><option value="Under Review" data-i18n="complaintUnderReview">قيد المراجعة</option><option value="In Progress" data-i18n="complaintInProgress">قيد المعالجة</option><option value="Resolved" data-i18n="resolved">تمت المعالجة</option><option value="Closed" data-i18n="closed">مغلقة</option></select><button id="refreshComplaints" class="btn secondary" type="button" data-i18n="refresh">تحديث</button></div></div><section id="complaints" class="requests"></section></div>
+<p id="dashboardMessage" class="message" hidden></p>
+</section></main>
+<footer>© 2026 Tamaouz — Research &amp; Publication Consultancy</footer><script src="admin.js"></script>
 </body></html>
