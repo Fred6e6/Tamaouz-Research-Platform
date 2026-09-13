@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Tamaouz Student Dashboard">
   <title>Tamaouz | Student Dashboard</title>
-  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="dashboard.css?v=20260913-4">
 </head>
 <body>
 <header class="topbar">
@@ -45,26 +45,22 @@
   <section class="lookup-card complaint-lookup">
     <div class="section-heading">
       <p class="eyebrow" data-i18n="complaintEyebrow">CUSTOMER SERVICE</p>
-      <h2 data-i18n="complaintTitle">Track a Complaint</h2>
-      <p data-i18n="complaintSubtitle">Enter your complaint number and the email used when you submitted it.</p>
+      <h2 data-i18n="complaintTitle">My Complaints & Inquiries</h2>
+      <p data-i18n="complaintSubtitle">Enter the email used when you submitted your complaints or inquiries.</p>
     </div>
     <form id="complaintLookupForm" novalidate>
-      <label class="email-field">
-        <span data-i18n="complaintId">Complaint Number</span>
-        <input id="complaintId" required type="text" placeholder="CM-2026-00001" autocomplete="off">
-      </label>
       <label class="email-field">
         <span data-i18n="complaintEmail">Email Address</span>
         <input id="complaintEmail" required type="email" autocomplete="email" placeholder="name@example.com">
       </label>
-      <button class="btn" type="submit" data-i18n="trackComplaint">Track Complaint</button>
+      <button class="btn" type="submit" data-i18n="trackComplaint">View My Complaints</button>
     </form>
     <p id="complaintMessage" class="message" hidden></p>
-    <div id="complaintResult" class="result" hidden></div>
+    <div id="complaintsList" class="complaints-list" hidden></div>
   </section>
 </main>
 
 <footer><span>© 2026 Tamaouz — Research &amp; Publication Consultancy</span></footer>
-<script src="dashboard.js?v=20260913-3"></script>
+<script src="dashboard.js?v=20260913-4"></script>
 </body>
 </html>
