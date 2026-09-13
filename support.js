@@ -1,4 +1,4 @@
-const API_URL='https://script.google.com/macros/s/AKfycbw4GeV2ZDrYcPq8fYSuHhWtold8OUseRLU_mXBOztprFH_L4Q63ZiDuQYOwtZ9GaEz2/exec';
+const API_URL='https://script.google.com/macros/s/AKfycbz_1vqQxiffArbl0OC4Ff0MmMvTlUbZ_p1yaqKOd2y-OKHnaB1NXIqQ1IAH7v3CBzHp/exec';
 let lang=localStorage.getItem('tamaouz_language')||'ar';
 const form=document.getElementById('supportForm');
 const msg=document.getElementById('formMessage');
