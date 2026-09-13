@@ -3,13 +3,7 @@ const CONFIG = {
   SHEET_NAME: 'Complaints'
 };
 
-const COMPLAINT_STATUSES = [
-  'New',
-  'Under Review',
-  'In Progress',
-  'Resolved',
-  'Closed'
-];
+const COMPLAINT_STATUSES = ['New','Under Review','In Progress','Resolved','Closed'];
 
 function setupComplaints() {
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
@@ -32,6 +26,8 @@ function doGet(e) {
     let result;
     if (action === 'getComplaints') {
       result = getComplaints_(p.adminPassword);
+    } else if (action === 'getComplaint') {
+      result = getComplaint_(p.complaintId, p.email);
     } else if (action === 'updateComplaintStatus') {
       result = updateComplaintStatus_(p.complaintId, p.status, p.adminNotes, p.adminPassword);
     } else {
@@ -81,6 +77,35 @@ function createComplaintId_() {
     props.setProperty('COMPLAINT_COUNTER', String(count));
     return 'CM-' + year + '-' + String(count).padStart(5, '0');
   } finally { lock.releaseLock(); }
+}
+
+function getComplaint_(complaintId, email) {
+  const id = String(complaintId || '').trim().toUpperCase();
+  const userEmail = String(email || '').trim().toLowerCase();
+  if (!id || !userEmail) return {ok:false,error:'Complaint ID and email are required.'};
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+  if (!sheet || sheet.getLastRow() < 2) return {ok:false,error:'Complaint not found.'};
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  const idx = {};
+  headers.forEach((h,i) => idx[String(h)] = i);
+  for (let i=1;i<values.length;i++) {
+    const rowId = String(values[i][idx['Complaint ID']] || '').trim().toUpperCase();
+    const rowEmail = String(values[i][idx['Email']] || '').trim().toLowerCase();
+    if (rowId === id && rowEmail === userEmail) {
+      const created = values[i][idx['Created At']];
+      return {ok:true, complaint:{
+        complaintId:rowId,
+        createdAt:created instanceof Date ? created.toISOString() : String(created || ''),
+        type:String(values[i][idx['Type']] || ''),
+        subject:String(values[i][idx['Subject']] || ''),
+        status:String(values[i][idx['Status']] || 'New'),
+        adminNotes:String(values[i][idx['Admin Notes']] || '')
+      }};
+    }
+  }
+  return {ok:false,error:'Complaint not found.'};
 }
 
 function getComplaints_(adminPassword) {
