@@ -17,5 +17,8 @@ body[dir="ltr"] nav a[href="support.html"].btn-small[data-i18n="nav.support"]::a
 #how .steps p{margin:0;font-size:13px;line-height:1.5}
 @media(max-width:600px){#how.section{padding:40px 0}#how .section-heading{margin-bottom:20px}#how .section-heading h2{font-size:30px}}
 
-/* Mobile header */
+/* Mobile header: keep the logo, language and key actions compact on small screens */
 @media(max-width:600px){.site-header .nav-wrap{min-height:64px;gap:8px;width:94%}.site-header .brand-logo{width:88px;max-height:36px}.site-header nav{gap:5px;flex-wrap:nowrap}.site-header nav .btn-small{padding:8px 9px;border-radius:8px;font-size:12px;white-space:nowrap}.site-header nav .language-toggle{padding:7px 9px;border-radius:8px;font-size:12px;white-space:nowrap}.site-header nav a[href="#request"]{display:none}.site-header nav a[href="dashboard.html"].btn-small::after,.site-header nav a[href="support.html"].btn-small::after{font-size:12px!important}}
+
+/* Remove the homepage trust line below the hero buttons */
+.trust{display:none!important}
